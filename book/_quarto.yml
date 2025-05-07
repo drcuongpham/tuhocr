@@ -1,9 +1,9 @@
 project:
   type: book
-
+  output-dir: "/Users/cuongpham/Documents/GitHub/tuhocr/"
 book:
   title: "book"
-  author: "Norah Jones"
+  author: "Dr Cuong Pham"
   date: "5/7/2025"
   chapters:
     - index.qmd
