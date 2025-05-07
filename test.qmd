@@ -1,0 +1,15 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+abc
+
+```{r}
+1+1
+```
+
