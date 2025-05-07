@@ -1,0 +1,119 @@
+# Walmart
+
+```{r, echo=FALSE, results='hide'}
+knitr::opts_chunk$set(message = FALSE,  
+                      warning = FALSE)   
+```
+
+# Import dataset
+
+```{r}
+library(readxl)
+df <- read_excel("Final Walmart Data.xlsx")
+
+gsub(pattern = " ",
+     replacement ="_",
+     x = names(df)) -> names(df)
+
+names(df) <- toupper(names(df))
+
+names(df)[9] <- "TAX_5PT"
+```
+
+# Vấn đề: Không biết ngành nào đang có xu hướng tăng/giảm lợi nhuận trong thời gian gần đây
+
+● Bài toán: Phân tích xu hướng biến động biên lợi nhuận GROSS INCOME theo ngành trong quý I/2019 THEO CITY
+
+● Thuật toán: Linear Regression (loess) theo thời gian, hoặc Decision Tree để phát hiện mẫu thay đổi
+
+● Cột dùng: Date, Product line, gross margin percentage, gross income, Total, City
+
+● Kết quả:
+
+Giúp nhận diện sớm ngành hàng đang tăng trưởng lợi nhuận hay có dấu hiệu suy giảm, từ đó lên kế hoạch điều chỉnh nhanh trong quý tiếp theo
+
+```{r}
+df_time <- df[ , c(11, 6, 15, 16, 10, 3)]
+```
+
+```{r}
+df_time$DATE <- as.Date(df_time$DATE)
+class(df_time$DATE)
+```
+
+```{r}
+library(tidyverse)
+
+names(df_time)
+
+df_time |> dplyr:::group_by(DATE, PRODUCT_LINE, CITY) |> 
+  dplyr:::summarise(GROSS_INCOME = sum(GROSS_INCOME, na.rm =TRUE)) -> df_time_ok
+
+df_time_ok <- as.data.frame(df_time_ok)
+
+df_time_ok
+```
+
+```{r, fig.width=14, fig.height=8}
+library(ggplot2)
+library(ggh4x)
+
+strip <- strip_themed(background_y = elem_list_rect(fill = c("#0071DC", "#0071DC", "#0071DC")))
+
+# df_time_ok <- df_time_ok |> subset(PRODUCT_LINE == "Health and beauty")
+ggplot(data = df_time_ok,
+       mapping = aes(x = DATE,
+                     y = GROSS_INCOME,
+                     fill = "WActual")) +
+  
+  geom_line(linewidth = 0.5,
+            aes(color = "WActual"
+                )) +
+  
+  # facet_grid(CITY~PRODUCT_LINE) +
+  
+   ggh4x:::facet_grid2(CITY~PRODUCT_LINE,
+             axes = "all",
+             strip = strip) +
+  
+  geom_smooth(method = "loess",
+              aes(fill = "LOESS",
+                  color = "LOESS"),
+              alpha = 0.1) +
+  
+  geom_smooth(method = "lm",
+              aes(fill = "OLS",
+              color = "OLS"),
+              alpha = 0.1) +
+  
+  scale_color_manual(name = "Method",
+                     values = c("LOESS" = "red",
+                               "OLS" = "#0071DC",
+                               "WActual" = "black"),
+                    
+                    labels = c("LOESS", "OLS", "Actual")) +
+  
+    scale_fill_manual(values = c("LOESS" = "red",
+                               "OLS" = "#0071DC",
+                               "WActual" = "transparent"),
+                    name = "Method",
+                    labels = c("LOESS", "OLS", "Actual")) +
+  
+  theme_bw() +
+  
+  theme(strip.background.x = element_rect(colour = "black",
+                                          fill = "#FFC220")) +
+  
+  theme(strip.text.y = element_text(color = "white",
+                                    face = "bold")) +
+  
+  theme(strip.text.x = element_text(color = "black",
+                                    face = "bold")) +
+  
+  ylab("GROSS INCOME (USD)") +
+  
+  xlab("DATE") +
+  
+  labs(title = "Biến động lợi nhuận theo ngành hàng ở các thành phố (tháng 1-3/2019)")
+
+```
